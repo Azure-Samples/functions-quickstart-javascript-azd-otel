@@ -1,19 +1,19 @@
 ---
-description: This end-to-end Python sample demonstrates distributed tracing with OpenTelemetry across multiple Azure Functions in a Flex Consumption plan app with Service Bus integration and virtual network security.
+description: This end-to-end TypeScript sample demonstrates distributed tracing with OpenTelemetry across multiple Azure Functions in a Flex Consumption plan app with Service Bus integration and virtual network security.
 page_type: sample
 products:
 - azure-functions
 - azure
-urlFragment: functions-quickstart-python-azd-otel
+urlFragment: functions-quickstart-typescript-azd-otel
 languages:
-- python
+- typescript
 - bicep
 - azdeveloper
 ---
 
-# Azure Functions Python Service Bus Trigger with OpenTelemetry Distributed Tracing using Azure Developer CLI
+# Azure Functions TypeScript Service Bus Trigger with OpenTelemetry Distributed Tracing using Azure Developer CLI
 
-This template repository contains a Service Bus trigger reference sample for functions written in Python and deployed to Azure using the Azure Developer CLI (`azd`). The sample demonstrates distributed tracing using OpenTelemetry across multiple Azure Functions and includes managed identity and virtual network integration for secure deployment by default. This sample demonstrates these key features:
+This template repository contains a Service Bus trigger reference sample for functions written in TypeScript and deployed to Azure using the Azure Developer CLI (`azd`). The sample demonstrates distributed tracing using OpenTelemetry across multiple Azure Functions and includes managed identity and virtual network integration for secure deployment by default. This sample demonstrates these key features:
 
 * **Distributed tracing with OpenTelemetry**. The sample shows how to trace requests across multiple Azure Functions using OpenTelemetry integration, providing end-to-end visibility into function execution flows.
 * **Virtual network integration**. The Service Bus that this Flex Consumption app reads events from is secured behind a private endpoint. The function app can read events from it because it is configured with VNet integration. All connections to Service Bus and to the storage account associated with the Flex Consumption app also use managed identity connections instead of connection strings.
@@ -27,12 +27,11 @@ This sample demonstrates distributed tracing across multiple Azure Functions wit
 
 ## Prerequisites
 
-+ [Python 3.11 or later](https://www.python.org/downloads/)
-+ [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Cpython%2Cportal%2Cbash#install-the-azure-functions-core-tools)
++ [Node.js 18.x or later](https://nodejs.org/)
++ [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Cnode%2Cportal%2Cbash#install-the-azure-functions-core-tools)
 + To use Visual Studio Code to run and debug locally:
   + [Visual Studio Code](https://code.visualstudio.com/)
   + [Azure Functions extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
-  + [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
 + [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (for deployment)
 + [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd?tabs=winget-windows%2Cbrew-mac%2Cscript-linux&pivots=os-windows)
 + An Azure subscription with Microsoft.Web and Microsoft.App [registered resource providers](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider)
@@ -44,7 +43,7 @@ You can initialize a project from this `azd` template in one of these ways:
 + Use this `azd init` command from an empty local (root) folder:
 
     ```shell
-    azd init --template functions-quickstart-python-azd-otel
+    azd init --template functions-quickstart-typescript-azd-otel
     ```
 
     Supply an environment name, such as `flexquickstart` when prompted. In `azd`, the environment is used to maintain a unique deployment context for your app.
@@ -52,8 +51,8 @@ You can initialize a project from this `azd` template in one of these ways:
 + Clone the GitHub template repository locally using the `git clone` command:
 
     ```shell
-    git clone https://github.com/Azure-Samples/functions-quickstart-python-azd-otel.git
-    cd functions-quickstart-python-azd-otel
+    git clone https://github.com/Azure-Samples/functions-quickstart-typescript-azd-otel.git
+    cd functions-quickstart-typescript-azd-otel
     ```
 
     You can also clone the repository from your own fork in GitHub.
@@ -67,7 +66,8 @@ You can initialize a project from this `azd` template in one of these ways:
         "IsEncrypted": false,
         "Values": {
             "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "python",
+            "FUNCTIONS_WORKER_RUNTIME": "node",
+            "APPLICATIONINSIGHTS_CONNECTION_STRING": "",
             "ServiceBusConnection": "",
             "ServiceBusQueueName": "testqueue"
         }
@@ -77,17 +77,17 @@ You can initialize a project from this `azd` template in one of these ways:
     > [!NOTE]
     > The `ServiceBusConnection` will be empty for local development. You'll need an actual Service Bus connection for full testing, which will be provided after deployment to Azure.
 
-2. (Optional) Create a Python virtual environment and activate it:
+2. Install the required npm packages:
 
     ```shell
-    python -m venv .venv
-    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    cd src
+    npm install
     ```
 
-3. Install the required Python packages:
+3. Build the TypeScript code:
 
     ```shell
-    pip install -r src/requirements.txt
+    npm run build
     ```
 
 ## Run your app from the terminal
@@ -95,7 +95,7 @@ You can initialize a project from this `azd` template in one of these ways:
 1. From the `src` folder, run this command to start the Functions host locally:
 
     ```shell
-    func start
+    npm start
     ```
 
     > [!NOTE]
@@ -124,65 +124,110 @@ You can initialize a project from this `azd` template in one of these ways:
 
 ## Source Code
 
-The function app is defined in [`src/function_app.py`](./src/function_app.py) and contains three functions that demonstrate distributed tracing across a complete request flow:
+The function app is defined in TypeScript with the main entry point at [`src/index.ts`](./src/index.ts) which configures OpenTelemetry instrumentation, and contains three functions that demonstrate distributed tracing across a complete request flow:
 
 ### 1. First HTTP Function
-```python
-@app.function_name("first_http_function")
-@app.route(route="first_http_function", auth_level=func.AuthLevel.ANONYMOUS)
-def first_http_function(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function (first) processed a request.')
-    
-    # Call the second function
-    base_url = f"{req.url.split('/api/')[0]}/api"
-    second_function_url = f"{base_url}/second_http_function"
-    
-    response = requests.get(second_function_url)
-    second_function_result = response.text
-    
-    result = {
-        "message": "Hello from the first function!",
-        "second_function_response": second_function_result
-    }
-    
-    return func.HttpResponse(
-        json.dumps(result),
-        status_code=200,
-        mimetype="application/json"
-    )
+Located in [`src/functions/first_http_function.ts`](./src/functions/first_http_function.ts):
+
+```typescript
+export async function firstHttpFunction(
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> {
+  context.log("TypeScript HTTP trigger function (first) processed a request.");
+
+  // Log OpenTelemetry tracing information
+  context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
+  context.log(`Context traceparent- "${context.traceContext.traceParent}"`);
+  context.log(`ActiveSpan traceId- "${otelAPI.trace.getActiveSpan()}"`);
+
+  try {
+    // Call the second function
+    const baseUrl = request.url.split("/api/")[0];
+    const secondFunctionUrl = `${baseUrl}/api/second_http_function`;
+
+    const response = await axios.get(secondFunctionUrl);
+    const secondFunctionResult = response.data;
+
+    const result = {
+      message: "Hello from the first function!",
+      second_function_response: secondFunctionResult,
+    };
+
+    return {
+      status: 200,
+      body: JSON.stringify(result),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  } catch (error) {
+    context.log("Error occurred:", error);
+    return {
+      status: 500,
+      body: JSON.stringify({
+        error: "Failed to process request",
+        message: error.message,
+      }),
+    };
+  }
+}
 ```
 
 ### 2. Second HTTP Function
-```python
-@app.function_name("second_http_function")
-@app.route(route="second_http_function", auth_level=func.AuthLevel.ANONYMOUS)
-@app.service_bus_queue_output(arg_name="outputsbmsg", queue_name="%ServiceBusQueueName%",
-                              connection="ServiceBusConnection")
-def second_http_function(req: func.HttpRequest, outputsbmsg: func.Out[str]) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function (second) processed a request.')
+Located in [`src/functions/second_http_function.ts`](./src/functions/second_http_function.ts):
 
-    message = "This is the second function responding."
-    
-    # Send a message to the Service Bus queue
-    queue_message = "Message from second HTTP function to trigger ServiceBus queue processing"
-    outputsbmsg.set(queue_message)
-    logging.info('Sent message to ServiceBus queue: %s', queue_message)
-    
-    return func.HttpResponse(
-        message,
-        status_code=200
-    )
+```typescript
+export async function secondHttpFunction(
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> {
+  context.log("TypeScript HTTP trigger function (second) processed a request.");
+
+  // Log OpenTelemetry tracing information
+  context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
+  context.log(`Context traceparent- "${context.traceContext.traceParent}"`);
+
+  const message = "This is the second function responding.";
+
+  // Send a message to the Service Bus queue
+  const queueMessage =
+    "Message from second HTTP function to trigger ServiceBus queue processing";
+  
+  // Set the Service Bus output binding
+  context.extraOutputs.set(serviceBusOutput, queueMessage);
+  
+  context.log("Sent message to ServiceBus queue:", queueMessage);
+
+  return {
+    status: 200,
+    body: message,
+  };
+}
 ```
 
 ### 3. Service Bus Queue Trigger
-```python
-@app.service_bus_queue_trigger(arg_name="azservicebus", queue_name="%ServiceBusQueueName%",
-                               connection="ServiceBusConnection") 
-def servicebus_queue_trigger(azservicebus: func.ServiceBusMessage):
-    logging.info('Python ServiceBus Queue trigger start processing a message: %s',
-                azservicebus.get_body().decode('utf-8'))
-    time.sleep(5)
-    logging.info('Python ServiceBus Queue trigger end processing a message')
+Located in [`src/functions/servicebus_queue_trigger.ts`](./src/functions/servicebus_queue_trigger.ts):
+
+```typescript
+export async function serviceBusQueueTrigger(
+  message: unknown,
+  context: InvocationContext
+): Promise<void> {
+  context.log(
+    "TypeScript ServiceBus Queue trigger start processing a message:",
+    message
+  );
+
+  // Log OpenTelemetry tracing information
+  context.log(`Context traceparent- "${context.traceContext.traceParent}"`);
+  context.log(`ActiveSpan traceId- "${otelAPI.trace.getActiveSpan()}"`);
+
+  // Simulate processing time
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  context.log("TypeScript ServiceBus Queue trigger end processing a message");
+}
 ```
 
 ### Distributed Tracing Flow
@@ -193,11 +238,51 @@ This architecture creates a complete distributed tracing scenario:
 
 Key aspects of the implementation:
 
-+ **OpenTelemetry integration**: The `host.json` file enables OpenTelemetry with `"telemetryMode": "OpenTelemetry"`
-+ **Function chaining**: The first function calls the second using HTTP requests
-+ **Service Bus integration**: The second function outputs to Service Bus, which triggers the third function
++ **OpenTelemetry integration**: The [`src/index.ts`](./src/index.ts) file configures OpenTelemetry with Azure Monitor exporters for traces and logs
++ **Function chaining**: The first function calls the second using HTTP requests with axios
++ **Service Bus integration**: The second function outputs to Service Bus using output bindings, which triggers the third function
 + **Managed identity**: All Service Bus connections use managed identity instead of connection strings
 + **Processing simulation**: The 5-second delay in the Service Bus trigger simulates message processing work
+
+The OpenTelemetry configuration in [`src/index.ts`](./src/index.ts) sets up tracing and logging:
+
+```typescript
+// Create a NodeTracerProvider instance to manage tracing configuration
+const tracerProvider = new NodeTracerProvider();
+
+// Add Azure Monitor Trace Exporter to send trace data to Azure Monitor
+tracerProvider.addSpanProcessor(
+  new BatchSpanProcessor(new AzureMonitorTraceExporter())
+);
+
+// Register the tracer provider globally
+tracerProvider.register();
+
+// Create a LoggerProvider instance
+const loggerProvider = new LoggerProvider();
+
+// Add Azure Monitor Log Exporter
+loggerProvider.addLogRecordProcessor(
+  new SimpleLogRecordProcessor(new AzureMonitorLogExporter())
+);
+
+// Register instrumentations
+registerInstrumentations({
+  loggerProvider,
+  instrumentations: [
+    new HttpInstrumentation({ disableIncomingRequestInstrumentation: true }),
+    new AzureFunctionsInstrumentation(),
+  ],
+});
+
+// Configure Azure Functions app with OpenTelemetry enabled
+app.setup({
+  capabilities: {
+    WorkerOpenTelemetryEnabled: true,
+  },
+  enableHttpStream: true,
+});
+```
 
 The function configuration in [`src/host.json`](./src/host.json) enables OpenTelemetry and configures Service Bus settings:
 
@@ -207,7 +292,7 @@ The function configuration in [`src/host.json`](./src/host.json) enables OpenTel
   "telemetryMode": "OpenTelemetry",
   "extensions": {
     "serviceBus": {
-        "maxConcurrentCalls": 10
+      "maxConcurrentCalls": 10
     }
   },
   "extensionBundle": {
@@ -220,7 +305,7 @@ The function configuration in [`src/host.json`](./src/host.json) enables OpenTel
 Key configuration aspects:
 + **OpenTelemetry**: `"telemetryMode": "OpenTelemetry"` enables distributed tracing across function calls
 + **Service Bus concurrency**: `maxConcurrentCalls: 10` allows multiple messages to be processed concurrently
-+ **Dependencies**: The `requirements.txt` file includes `azure-monitor-opentelemetry` and `requests` packages for tracing and HTTP calls
++ **Dependencies**: The [`src/package.json`](./src/package.json) includes `@azure/functions-opentelemetry-instrumentation`, `@azure/monitor-opentelemetry-exporter`, and `axios` packages for OpenTelemetry tracing and HTTP calls
 
 ## Deploy to Azure
 
