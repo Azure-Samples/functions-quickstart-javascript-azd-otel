@@ -140,6 +140,7 @@ export async function firstHttpFunction(
   context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
   context.log(`Context traceparent- "${context.traceContext.traceParent}"`);
   context.log(`ActiveSpan traceId- "${otelAPI.trace.getActiveSpan()}"`);
+  context.log(`ActiveSpan spanId- "${otelAPI.trace.getActiveSpan()}"`);
 
   try {
     // Call the second function
@@ -153,6 +154,8 @@ export async function firstHttpFunction(
       message: "Hello from the first function!",
       second_function_response: secondFunctionResult,
     };
+
+    context.log("Successfully called second function");
 
     return {
       status: 200,
@@ -169,6 +172,9 @@ export async function firstHttpFunction(
         error: "Failed to process request",
         message: error.message,
       }),
+      headers: {
+        "Content-Type": "application/json",
+      },
     };
   }
 }
@@ -187,6 +193,8 @@ export async function secondHttpFunction(
   // Log OpenTelemetry tracing information
   context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
   context.log(`Context traceparent- "${context.traceContext.traceParent}"`);
+  context.log(`ActiveSpan traceId- "${otelAPI.trace.getActiveSpan()}"`);
+  context.log(`ActiveSpan spanId- "${otelAPI.trace.getActiveSpan()}"`);
 
   const message = "This is the second function responding.";
 
@@ -222,6 +230,7 @@ export async function serviceBusQueueTrigger(
   // Log OpenTelemetry tracing information
   context.log(`Context traceparent- "${context.traceContext.traceParent}"`);
   context.log(`ActiveSpan traceId- "${otelAPI.trace.getActiveSpan()}"`);
+  context.log(`ActiveSpan spanId- "${otelAPI.trace.getActiveSpan()}"`);
 
   // Simulate processing time
   await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -247,40 +256,38 @@ Key aspects of the implementation:
 The OpenTelemetry configuration in [`src/index.ts`](./src/index.ts) sets up tracing and logging:
 
 ```typescript
-// Create a NodeTracerProvider instance to manage tracing configuration
-const tracerProvider = new NodeTracerProvider();
+import { AzureFunctionsInstrumentation } from '@azure/functions-opentelemetry-instrumentation';
+import { AzureMonitorLogExporter, AzureMonitorTraceExporter } from '@azure/monitor-opentelemetry-exporter';
+import { getNodeAutoInstrumentations, getResourceDetectors } from '@opentelemetry/auto-instrumentations-node';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { detectResources } from '@opentelemetry/resources';
+import { LoggerProvider, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
+import { NodeTracerProvider, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-node';
 
-// Add Azure Monitor Trace Exporter to send trace data to Azure Monitor
-tracerProvider.addSpanProcessor(
-  new BatchSpanProcessor(new AzureMonitorTraceExporter())
-);
+// Detect resources automatically (service name, version, etc.)
+const resource = detectResources({ detectors: getResourceDetectors() });
 
-// Register the tracer provider globally
+// Create and configure NodeTracerProvider with Azure Monitor exporter
+const tracerProvider = new NodeTracerProvider({ 
+  resource, 
+  spanProcessors: [new SimpleSpanProcessor(new AzureMonitorTraceExporter())] 
+});
 tracerProvider.register();
 
-// Create a LoggerProvider instance
-const loggerProvider = new LoggerProvider();
-
-// Add Azure Monitor Log Exporter
-loggerProvider.addLogRecordProcessor(
-  new SimpleLogRecordProcessor(new AzureMonitorLogExporter())
-);
-
-// Register instrumentations
-registerInstrumentations({
-  loggerProvider,
-  instrumentations: [
-    new HttpInstrumentation({ disableIncomingRequestInstrumentation: true }),
-    new AzureFunctionsInstrumentation(),
-  ],
+// Create and configure LoggerProvider with Azure Monitor exporter
+const loggerProvider = new LoggerProvider({
+  resource,
+  processors: [new SimpleLogRecordProcessor(new AzureMonitorLogExporter())],
 });
 
-// Configure Azure Functions app with OpenTelemetry enabled
-app.setup({
-  capabilities: {
-    WorkerOpenTelemetryEnabled: true,
-  },
-  enableHttpStream: true,
+// Register instrumentations including auto-instrumentations for Node.js
+registerInstrumentations({
+    tracerProvider,
+    loggerProvider,
+    instrumentations: [
+      getNodeAutoInstrumentations(), 
+      new AzureFunctionsInstrumentation()
+    ],
 });
 ```
 
