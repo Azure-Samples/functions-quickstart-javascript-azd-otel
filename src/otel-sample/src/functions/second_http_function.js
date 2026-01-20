@@ -1,14 +1,8 @@
-// Import Azure Functions types and app instance for HTTP trigger setup
-import {
-  app,
-  HttpRequest,
-  HttpResponseInit,
-  InvocationContext,
-  output,
-} from "@azure/functions";
+// Import Azure Functions app instance for HTTP trigger setup
+const { app, output } = require("@azure/functions");
 
 // Import OpenTelemetry API for tracing
-import otelAPI from "@opentelemetry/api";
+const otelAPI = require("@opentelemetry/api");
 
 // Define Service Bus output binding
 const serviceBusOutput = output.serviceBusQueue({
@@ -20,15 +14,12 @@ const serviceBusOutput = output.serviceBusQueue({
  * Second HTTP trigger function with Service Bus output binding.
  * This function demonstrates OpenTelemetry tracing and sends messages to Service Bus.
  *
- * @param request - Incoming HTTP request object
- * @param context - Azure Functions invocation context for logging and tracing
- * @returns HTTP response with confirmation message
+ * @param {import("@azure/functions").HttpRequest} request - Incoming HTTP request object
+ * @param {import("@azure/functions").InvocationContext} context - Azure Functions invocation context for logging and tracing
+ * @returns {Promise<import("@azure/functions").HttpResponseInit>} HTTP response with confirmation message
  */
-export async function secondHttpFunction(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<HttpResponseInit> {
-  context.log("TypeScript HTTP trigger function (second) processed a request.");
+async function secondHttpFunction(request, context) {
+  context.log("JavaScript HTTP trigger function (second) processed a request.");
 
   // Log incoming request traceparent header for distributed tracing
   context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);

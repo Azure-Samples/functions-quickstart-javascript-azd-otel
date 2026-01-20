@@ -1,22 +1,19 @@
-// Import Azure Functions types and app instance for Service Bus trigger setup
-import { app, InvocationContext } from "@azure/functions";
+// Import Azure Functions app instance for Service Bus trigger setup
+const { app } = require("@azure/functions");
 
 // Import OpenTelemetry API for tracing
-import otelAPI from "@opentelemetry/api";
+const otelAPI = require("@opentelemetry/api");
 
 /**
  * Service Bus Queue trigger function that demonstrates OpenTelemetry tracing.
  * This function is triggered when a message is added to the Service Bus queue.
  *
- * @param message - The Service Bus message that triggered the function
- * @param context - Azure Functions invocation context for logging and tracing
+ * @param {unknown} message - The Service Bus message that triggered the function
+ * @param {import("@azure/functions").InvocationContext} context - Azure Functions invocation context for logging and tracing
  */
-export async function serviceBusQueueTrigger(
-  message: unknown,
-  context: InvocationContext
-): Promise<void> {
+async function serviceBusQueueTrigger(message, context) {
   context.log(
-    "TypeScript ServiceBus Queue trigger start processing a message:",
+    "JavaScript ServiceBus Queue trigger start processing a message:",
     message
   );
 
@@ -32,7 +29,7 @@ export async function serviceBusQueueTrigger(
   // Simulate processing time
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  context.log("TypeScript ServiceBus Queue trigger end processing a message");
+  context.log("JavaScript ServiceBus Queue trigger end processing a message");
 }
 
 // Register Service Bus Queue trigger function with Azure Functions runtime

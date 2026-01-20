@@ -1,19 +1,19 @@
 ---
-description: This end-to-end TypeScript sample demonstrates distributed tracing with OpenTelemetry across multiple Azure Functions in a Flex Consumption plan app with Service Bus integration and virtual network security.
+description: This end-to-end JavaScript sample demonstrates distributed tracing with OpenTelemetry across multiple Azure Functions in a Flex Consumption plan app with Service Bus integration and virtual network security.
 page_type: sample
 products:
 - azure-functions
 - azure
-urlFragment: functions-quickstart-typescript-azd-otel
+urlFragment: functions-quickstart-javascript-azd-otel
 languages:
-- typescript
+- javascript
 - bicep
 - azdeveloper
 ---
 
-# Azure Functions TypeScript Service Bus Trigger with OpenTelemetry Distributed Tracing using Azure Developer CLI
+# Azure Functions JavaScript Service Bus Trigger with OpenTelemetry Distributed Tracing using Azure Developer CLI
 
-This template repository contains a Service Bus trigger reference sample for functions written in TypeScript and deployed to Azure using the Azure Developer CLI (`azd`). The sample demonstrates distributed tracing using OpenTelemetry across multiple Azure Functions and includes managed identity and virtual network integration for secure deployment by default. This sample demonstrates these key features:
+This template repository contains a Service Bus trigger reference sample for functions written in JavaScript and deployed to Azure using the Azure Developer CLI (`azd`). The sample demonstrates distributed tracing using OpenTelemetry across multiple Azure Functions and includes managed identity and virtual network integration for secure deployment by default. This sample demonstrates these key features:
 
 * **Distributed tracing with OpenTelemetry**. The sample shows how to trace requests across multiple Azure Functions using OpenTelemetry integration, providing end-to-end visibility into function execution flows.
 * **Virtual network integration**. The Service Bus that this Flex Consumption app reads events from is secured behind a private endpoint. The function app can read events from it because it is configured with VNet integration. All connections to Service Bus and to the storage account associated with the Flex Consumption app also use managed identity connections instead of connection strings.
@@ -27,7 +27,7 @@ This sample demonstrates distributed tracing across multiple Azure Functions wit
 
 ## Prerequisites
 
-+ [Node.js 18.x or later](https://nodejs.org/)
++ [Node.js 22.x](https://nodejs.org/)
 + [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Cnode%2Cportal%2Cbash#install-the-azure-functions-core-tools)
 + To use Visual Studio Code to run and debug locally:
   + [Visual Studio Code](https://code.visualstudio.com/)
@@ -43,7 +43,7 @@ You can initialize a project from this `azd` template in one of these ways:
 + Use this `azd init` command from an empty local (root) folder:
 
     ```shell
-    azd init --template functions-quickstart-typescript-azd-otel
+    azd init --template functions-quickstart-javascript-azd-otel
     ```
 
     Supply an environment name, such as `flexquickstart` when prompted. In `azd`, the environment is used to maintain a unique deployment context for your app.
@@ -51,8 +51,8 @@ You can initialize a project from this `azd` template in one of these ways:
 + Clone the GitHub template repository locally using the `git clone` command:
 
     ```shell
-    git clone https://github.com/Azure-Samples/functions-quickstart-typescript-azd-otel.git
-    cd functions-quickstart-typescript-azd-otel
+    git clone https://github.com/Azure-Samples/functions-quickstart-javascript-azd-otel.git
+    cd functions-quickstart-javascript-azd-otel
     ```
 
     You can also clone the repository from your own fork in GitHub.
@@ -80,14 +80,8 @@ You can initialize a project from this `azd` template in one of these ways:
 2. Install the required npm packages:
 
     ```shell
-    cd src
+    cd src/otel-sample
     npm install
-    ```
-
-3. Build the TypeScript code:
-
-    ```shell
-    npm run build
     ```
 
 ## Run your app from the terminal
@@ -124,17 +118,14 @@ You can initialize a project from this `azd` template in one of these ways:
 
 ## Source Code
 
-The function app is defined in TypeScript with the main entry point at [`src/index.ts`](./src/index.ts) which configures OpenTelemetry instrumentation, and contains three functions that demonstrate distributed tracing across a complete request flow:
+The function app is defined in JavaScript with the main entry point at [`src/otel-sample/src/index.js`](./src/otel-sample/src/index.js) which configures OpenTelemetry instrumentation, and contains three functions that demonstrate distributed tracing across a complete request flow:
 
 ### 1. First HTTP Function
-Located in [`src/functions/first_http_function.ts`](./src/functions/first_http_function.ts):
+Located in [`src/otel-sample/src/functions/first_http_function.js`](./src/otel-sample/src/functions/first_http_function.js):
 
-```typescript
-export async function firstHttpFunction(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<HttpResponseInit> {
-  context.log("TypeScript HTTP trigger function (first) processed a request.");
+```javascript
+async function firstHttpFunction(request, context) {
+  context.log("JavaScript HTTP trigger function (first) processed a request.");
 
   // Log OpenTelemetry tracing information
   context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
@@ -181,14 +172,11 @@ export async function firstHttpFunction(
 ```
 
 ### 2. Second HTTP Function
-Located in [`src/functions/second_http_function.ts`](./src/functions/second_http_function.ts):
+Located in [`src/otel-sample/src/functions/second_http_function.js`](./src/otel-sample/src/functions/second_http_function.js):
 
-```typescript
-export async function secondHttpFunction(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<HttpResponseInit> {
-  context.log("TypeScript HTTP trigger function (second) processed a request.");
+```javascript
+async function secondHttpFunction(request, context) {
+  context.log("JavaScript HTTP trigger function (second) processed a request.");
 
   // Log OpenTelemetry tracing information
   context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
@@ -215,15 +203,12 @@ export async function secondHttpFunction(
 ```
 
 ### 3. Service Bus Queue Trigger
-Located in [`src/functions/servicebus_queue_trigger.ts`](./src/functions/servicebus_queue_trigger.ts):
+Located in [`src/otel-sample/src/functions/servicebus_queue_trigger.js`](./src/otel-sample/src/functions/servicebus_queue_trigger.js):
 
-```typescript
-export async function serviceBusQueueTrigger(
-  message: unknown,
-  context: InvocationContext
-): Promise<void> {
+```javascript
+async function serviceBusQueueTrigger(message, context) {
   context.log(
-    "TypeScript ServiceBus Queue trigger start processing a message:",
+    "JavaScript ServiceBus Queue trigger start processing a message:",
     message
   );
 
@@ -235,7 +220,7 @@ export async function serviceBusQueueTrigger(
   // Simulate processing time
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  context.log("TypeScript ServiceBus Queue trigger end processing a message");
+  context.log("JavaScript ServiceBus Queue trigger end processing a message");
 }
 ```
 
@@ -247,22 +232,22 @@ This architecture creates a complete distributed tracing scenario:
 
 Key aspects of the implementation:
 
-+ **OpenTelemetry integration**: The [`src/index.ts`](./src/index.ts) file configures OpenTelemetry with Azure Monitor exporters for traces and logs
++ **OpenTelemetry integration**: The [`src/otel-sample/src/index.js`](./src/otel-sample/src/index.js) file configures OpenTelemetry with Azure Monitor exporters for traces and logs
 + **Function chaining**: The first function calls the second using HTTP requests with axios
 + **Service Bus integration**: The second function outputs to Service Bus using output bindings, which triggers the third function
 + **Managed identity**: All Service Bus connections use managed identity instead of connection strings
 + **Processing simulation**: The 5-second delay in the Service Bus trigger simulates message processing work
 
-The OpenTelemetry configuration in [`src/index.ts`](./src/index.ts) sets up tracing and logging:
+The OpenTelemetry configuration in [`src/otel-sample/src/index.js`](./src/otel-sample/src/index.js) sets up tracing and logging:
 
-```typescript
-import { AzureFunctionsInstrumentation } from '@azure/functions-opentelemetry-instrumentation';
-import { AzureMonitorLogExporter, AzureMonitorTraceExporter } from '@azure/monitor-opentelemetry-exporter';
-import { getNodeAutoInstrumentations, getResourceDetectors } from '@opentelemetry/auto-instrumentations-node';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
-import { detectResources } from '@opentelemetry/resources';
-import { LoggerProvider, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
-import { NodeTracerProvider, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-node';
+```javascript
+const { AzureFunctionsInstrumentation } = require('@azure/functions-opentelemetry-instrumentation');
+const { AzureMonitorLogExporter, AzureMonitorTraceExporter } = require('@azure/monitor-opentelemetry-exporter');
+const { getNodeAutoInstrumentations, getResourceDetectors } = require('@opentelemetry/auto-instrumentations-node');
+const { registerInstrumentations } = require('@opentelemetry/instrumentation');
+const { detectResources } = require('@opentelemetry/resources');
+const { LoggerProvider, SimpleLogRecordProcessor } = require('@opentelemetry/sdk-logs');
+const { NodeTracerProvider, SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-node');
 
 // Detect resources automatically (service name, version, etc.)
 const resource = detectResources({ detectors: getResourceDetectors() });
@@ -291,7 +276,7 @@ registerInstrumentations({
 });
 ```
 
-The function configuration in [`src/host.json`](./src/host.json) enables OpenTelemetry and configures Service Bus settings:
+The function configuration in [`src/otel-sample/host.json`](./src/otel-sample/host.json) enables OpenTelemetry and configures Service Bus settings:
 
 ```json
 {
@@ -312,7 +297,7 @@ The function configuration in [`src/host.json`](./src/host.json) enables OpenTel
 Key configuration aspects:
 + **OpenTelemetry**: `"telemetryMode": "OpenTelemetry"` enables distributed tracing across function calls
 + **Service Bus concurrency**: `maxConcurrentCalls: 10` allows multiple messages to be processed concurrently
-+ **Dependencies**: The [`src/package.json`](./src/package.json) includes `@azure/functions-opentelemetry-instrumentation`, `@azure/monitor-opentelemetry-exporter`, and `axios` packages for OpenTelemetry tracing and HTTP calls
++ **Dependencies**: The [`src/otel-sample/package.json`](./src/otel-sample/package.json) includes `@azure/functions-opentelemetry-instrumentation`, `@azure/monitor-opentelemetry-exporter`, and `axios` packages for OpenTelemetry tracing and HTTP calls
 
 ## Deploy to Azure
 

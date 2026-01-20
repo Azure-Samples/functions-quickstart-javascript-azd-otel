@@ -37,7 +37,12 @@ var appName = !empty(processorServiceName) ? processorServiceName : '${abbrs.web
 var deploymentStorageContainerName = 'app-package-${take(appName, 32)}-${take(resourceToken, 7)}'
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
-var principalIds = !empty(principalId) ? [processorUserAssignedIdentity.outputs.principalId, principalId] : [processorUserAssignedIdentity.outputs.principalId]
+var principals = !empty(principalId) ? [
+  { id: processorUserAssignedIdentity.outputs.principalId, type: 'ServicePrincipal' }
+  { id: principalId, type: 'User' }
+] : [
+  { id: processorUserAssignedIdentity.outputs.principalId, type: 'ServicePrincipal' }
+]
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -68,7 +73,7 @@ module processor './app/processor.bicep' = {
     applicationInsightsName: monitoring.outputs.name
     appServicePlanId: appServicePlan.outputs.resourceId
     runtimeName: 'node'
-    runtimeVersion: '20'
+    runtimeVersion: '22'
     storageAccountName: storage.outputs.name
     identityId: processorUserAssignedIdentity.outputs.resourceId
     identityClientId: processorUserAssignedIdentity.outputs.clientId
@@ -120,7 +125,7 @@ module storageBlobDataOwnerRoleDefinitionApi 'app/storage-Access.bicep' = [for r
   params: {
     storageAccountName: storage.outputs.name
     roleId: roleId
-    principalIds: principalIds
+    principals: principals
   }
 }]
 
@@ -167,7 +172,7 @@ module ServiceBusDataOwnerRoleAssignment 'app/servicebus-Access.bicep' = [for ro
   params: {
     serviceBusNamespaceName: serviceBus.outputs.name
     roleDefinitionId: roleId
-    principalIds: principalIds
+    principals: principals
   }
 }]
 
@@ -178,7 +183,7 @@ module appInsightsMetricsPublisherRole 'app/appinsights-Access.bicep' = {
   params: {
     applicationInsightsName: monitoring.outputs.name
     roleId: '3913510d-42f4-4e42-8a64-420c390055eb' // Monitoring Metrics Publisher
-    principalIds: principalIds
+    principals: principals
   }
 }
 

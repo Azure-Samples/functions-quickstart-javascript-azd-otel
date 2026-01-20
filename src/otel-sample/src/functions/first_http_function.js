@@ -1,30 +1,22 @@
-// Import Azure Functions types and app instance for HTTP trigger setup
-import {
-  app,
-  HttpRequest,
-  HttpResponseInit,
-  InvocationContext,
-} from "@azure/functions";
+// Import Azure Functions app instance for HTTP trigger setup
+const { app } = require("@azure/functions");
 
 // Import axios for making HTTP requests
-import axios from "axios";
+const axios = require("axios");
 
 // Import OpenTelemetry API for tracing
-import otelAPI from "@opentelemetry/api";
+const otelAPI = require("@opentelemetry/api");
 
 /**
  * First HTTP trigger function that demonstrates tracing and logging with OpenTelemetry.
  * This function calls the second HTTP function to demonstrate distributed tracing.
  *
- * @param request - Incoming HTTP request object
- * @param context - Azure Functions invocation context for logging and tracing
- * @returns HTTP response with message from both functions
+ * @param {import("@azure/functions").HttpRequest} request - Incoming HTTP request object
+ * @param {import("@azure/functions").InvocationContext} context - Azure Functions invocation context for logging and tracing
+ * @returns {Promise<import("@azure/functions").HttpResponseInit>} HTTP response with message from both functions
  */
-export async function firstHttpFunction(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<HttpResponseInit> {
-  context.log("TypeScript HTTP trigger function (first) processed a request.");
+async function firstHttpFunction(request, context) {
+  context.log("JavaScript HTTP trigger function (first) processed a request.");
 
   // Log incoming request traceparent header for distributed tracing
   context.log(`Header traceparent- "${request.headers.get("traceparent")}"`);
